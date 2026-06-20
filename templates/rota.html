@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="rota-card">
+  <div class="week-nav">
+    <a href="/rota?week={{ offset - 1 }}">&#8249;</a>
+    <span class="week-label">Week: {{ week_label }}</span>
+    <a href="/rota?week={{ offset + 1 }}">&#8250;</a>
+  </div>
+
+  {% if not schedule %}
+    <p style="color:#888">No staff yet. <a href="/staff">Add staff</a> to get started.</p>
+  {% else %}
+
+  <div style="overflow-x:auto">
+  <table class="table table-bordered rota-table">
+    <thead>
+      <tr>
+        <th style="min-width:130px">Staff</th>
+        {% for day in days %}
+          <th>{{ day }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in schedule %}
+      {% set s = row.staff %}
+      <tr>
+        <td>
+          <strong>{{ s["name"] }}</strong>
+          <div style="font-size:12px;color:#888;margin-top:2px">
+            {{ row.working | join(", ") if row.working else "No working days set" }}
+          </div>
+        </td>
+        {% for d in row.days %}
+          {% if d.status == "off" %}
+            <td class="cell-off">OFF</td>
+          {% else %}
+            <td class="cell-working">
+              <form method="POST" action="/rota/assign" style="margin:0">
+                <input type="hidden" name="week_start" value="{{ week_start }}">
+                <input type="hidden" name="staff_id"   value="{{ s['id'] }}">
+                <input type="hidden" name="day"        value="{{ d.day }}">
+                <input type="hidden" name="offset"     value="{{ offset }}">
+                <select name="client_id" class="day-select" onchange="this.form.submit()">
+                  <option value="">&#8212; Working / No client &#8212;</option>
+                  {% for c in clients %}
+                    {% set is_pref = s['id']|string in preferred_map[c['id']] %}
+                    <option value="{{ c['id'] }}"
+                      {% if d.client_id == c['id'] %}selected{% endif %}>
+                      {{ "&#9733; " if is_pref else "" }}{{ c['name'] }}
+                    </option>
+                  {% endfor %}
+                </select>
+                {% if d.client_id and d.client_id in client_map %}
+                  <div style="font-size:11px;color:#555;margin-top:3px">
+                    {{ client_map[d.client_id]["address"] or "" }}
+                  </div>
+                {% endif %}
+              </form>
+            </td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <div class="d-flex align-items-center gap-3 flex-wrap mt-3">
+    <form method="POST" action="/rota/send">
+      <input type="hidden" name="week_start" value="{{ week_start }}">
+      <input type="hidden" name="offset"     value="{{ offset }}">
+      <button type="submit" class="btn btn-success">
+        &#9993; Email rota to all staff
+      </button>
+    </form>
+    <span style="font-size:13px;color:#888">
+      Each staff member receives only their own working days and client assignments
+    </span>
+  </div>
+  {% endif %}
+</div>
+
+<div class="rota-card" style="font-size:13px;color:#555">
+  <strong>Legend:</strong>
+  &nbsp;
+  <span style="background:#f5f5f5;padding:3px 10px;border-radius:4px;color:#bbb">OFF</span>
+  = day off (set automatically from staff profile)
+  &nbsp;&nbsp;
+  <span style="background:#f0f7ff;padding:3px 10px;border-radius:4px;color:#005EB8">Blue</span>
+  = working day &mdash; assign a client from the dropdown
+  &nbsp;&nbsp;
+  <strong>&#9733;</strong> = preferred carer for that client
+</div>
+{% endblock %}

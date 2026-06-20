@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="rota-card">
+  <h2 class="mb-4">Clients</h2>
+  <form method="POST" action="/clients/add">
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Client Name</label>
+        <input type="text" name="name" class="form-control" required placeholder="e.g. Margaret Smith">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Address</label>
+        <input type="text" name="address" class="form-control" placeholder="e.g. 12 Oak Street, Sheffield">
+      </div>
+    </div>
+    <label class="form-label">Preferred Carer(s)</label>
+    <div class="checkbox-group mb-3">
+      {% for s in staff %}
+        <label>
+          <input type="checkbox" name="preferred_staff" value="{{ s['id'] }}">
+          {{ s["name"] }}
+        </label>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Add Client</button>
+  </form>
+</div>
+
+{% if clients %}
+<div class="rota-card">
+  <h3 class="mb-3">All Clients ({{ clients|length }})</h3>
+  <table class="table table-hover align-middle">
+    <thead class="table-dark">
+      <tr><th>Name</th><th>Address</th><th>Preferred Carers</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for c in clients %}
+      <tr>
+        <td><strong>{{ c["name"] }}</strong></td>
+        <td>{{ c["address"] or "&mdash;" }}</td>
+        <td>
+          {% set pref = c["preferred_staff"]|tojson|fromjson %}
+          {% if pref %}
+            {% for pid in pref %}
+              {% for s in staff %}{% if s["id"]|string == pid %}
+                <span class="badge-pref">&#9733; {{ s["name"] }}</span>
+              {% endif %}{% endfor %}
+            {% endfor %}
+          {% else %}
+            <span style="color:#aaa">none set</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/clients/{{ c['id'] }}/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
+          <form method="POST" action="/clients/{{ c['id'] }}/delete" style="display:inline">
+            <button type="submit" class="btn btn-sm btn-danger"
+              onclick="return confirm('Remove {{ c['name'] }}?')">Remove</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

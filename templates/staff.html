@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="rota-card">
+  <h2 class="mb-4">Staff</h2>
+  <form method="POST" action="/staff/add">
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Full Name</label>
+        <input type="text" name="name" class="form-control" required placeholder="e.g. Mary Johnson">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Email (for rota notifications)</label>
+        <input type="email" name="email" class="form-control" placeholder="mary@example.com">
+      </div>
+    </div>
+    <label class="form-label">Days Off (regular)</label>
+    <div class="checkbox-group mb-3">
+      {% for day in days %}
+        <label><input type="checkbox" name="off_days" value="{{ day }}"> {{ day }}</label>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Add Staff Member</button>
+  </form>
+</div>
+
+{% if staff %}
+<div class="rota-card">
+  <h3 class="mb-3">All Staff ({{ staff|length }})</h3>
+  <table class="table table-hover align-middle">
+    <thead class="table-dark">
+      <tr><th>Name</th><th>Email</th><th>Regular Days Off</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for s in staff %}
+      <tr>
+        <td><strong>{{ s["name"] }}</strong></td>
+        <td>{{ s["email"] or "&mdash;" }}</td>
+        <td>
+          {% set off = s["off_days"]|tojson|fromjson %}
+          {% if off %}
+            {% for d in off %}<span class="badge-off">{{ d }}</span> {% endfor %}
+          {% else %}
+            <span style="color:#aaa">none set</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/staff/{{ s['id'] }}/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
+          <form method="POST" action="/staff/{{ s['id'] }}/delete" style="display:inline">
+            <button type="submit" class="btn btn-sm btn-danger"
+              onclick="return confirm('Remove {{ s['name'] }}?')">Remove</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

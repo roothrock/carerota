@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="rota-card">
+  <h2 class="mb-4">Edit Staff &mdash; {{ member["name"] }}</h2>
+  <form method="POST">
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Full Name</label>
+        <input type="text" name="name" class="form-control" value="{{ member['name'] }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" value="{{ member['email'] or '' }}">
+      </div>
+    </div>
+    <label class="form-label">Regular Days Off</label>
+    <div class="checkbox-group mb-4">
+      {% for day in days %}
+        <label>
+          <input type="checkbox" name="off_days" value="{{ day }}"
+            {% if day in off_days %}checked{% endif %}>
+          {{ day }}
+        </label>
+      {% endfor %}
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="/staff" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
