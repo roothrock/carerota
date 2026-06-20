@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="week-nav">
+    <a href="/rota?week={{ offset - 1 }}">&#8249;</a>
+    <span class="week-label">Week: {{ week_label }}</span>
+    <a href="/rota?week={{ offset + 1 }}">&#8250;</a>
+  </div>
+
+  {% if not clients %}
+    <p style="color:#888">No clients yet. <a href="/clients">Add a client</a> to get started.</p>
+  {% else %}
+  <div style="overflow-x:auto">
+  <table class="rota-table">
+    <thead>
+      <tr>
+        <th>Client</th>
+        {% for day in days %}
+          <th>{{ day }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for client in clients %}
+      {% set cid = client["id"] %}
+      {% set pref = preferred_map[cid] %}
+      <tr>
+        <td>
+          <strong>{{ client["name"] }}</strong>
+          {% if client["address"] %}
+            <div style="font-size:12px;color:#888">{{ client["address"] }}</div>
+          {% endif %}
+          {% if pref %}
+            <div style="margin-top:4px">
+              {% for pid in pref %}
+                {% for s in staff %}{% if s["id"]|string == pid %}
+                  <span class="badge badge-pref">&#9733; {{ s["name"] }}</span>
+                {% endif %}{% endfor %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </td>
+        {% for day in days %}
+          {% set assigned = rota_map.get(cid, {}).get(day, None) %}
+          <td>
+            <form method="POST" action="/rota/assign">
+              <input type="hidden" name="week_start" value="{{ week_start }}">
+              <input type="hidden" name="client_id" value="{{ cid }}">
+              <input type="hidden" name="day" value="{{ day }}">
+              <input type="hidden" name="offset" value="{{ offset }}">
+              <select name="staff_id" class="day-select" onchange="this.form.submit()">
+                <option value="">— Off / Unassigned —</option>
+                {% for s in staff %}
+                  {% set sid = s["id"] %}
+                  {% set is_off = day in off_map[sid] %}
+                  {% set is_pref = sid|string in pref %}
+                  {% set is_double = booked.get(day, {}).get(sid, 0) > 1 %}
+                  <option value="{{ sid }}"
+                    {% if assigned == sid %}selected{% endif %}
+                    {% if is_off %}disabled{% endif %}>
+                    {{ "★ " if is_pref else "" }}{{ s["name"] }}{{ " (OFF)" if is_off else "" }}{{ " ⚠ double" if is_double else "" }}
+                  </option>
+                {% endfor %}
+              </select>
+              {% if assigned %}
+                {% for s in staff %}{% if s["id"] == assigned %}
+                  {% set is_off = day in off_map[assigned] %}
+                  {% set is_double = booked.get(day, {}).get(assigned, 0) > 1 %}
+                  {% if is_off %}
+                    <div><span class="badge badge-off">OFF DAY</span></div>
+                  {% endif %}
+                  {% if is_double %}
+                    <div><span class="badge badge-double">&#9888; Double booked</span></div>
+                  {% endif %}
+                {% endif %}{% endfor %}
+              {% endif %}
+            </form>
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <div style="margin-top:20px;display:flex;gap:12px;align-items:center">
+    <form method="POST" action="/rota/send">
+      <input type="hidden" name="week_start" value="{{ week_start }}">
+      <input type="hidden" name="offset" value="{{ offset }}">
+      <button type="submit" class="btn btn-success">
+        &#9993; Email rota to all staff
+      </button>
+    </form>
+    <span style="font-size:13px;color:#888">
+      Sends each staff member only their own shifts for this week
+    </span>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card" style="font-size:13px;color:#555">
+  <strong>Legend:</strong>
+  &nbsp; <span class="badge badge-pref">&#9733; Name</span> = preferred carer for this client
+  &nbsp; <span class="badge badge-off">OFF DAY</span> = assigned on their day off
+  &nbsp; <span class="badge badge-double">&#9888; Double booked</span> = assigned twice same day
+</div>
+{% endblock %}
